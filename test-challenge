@@ -1,0 +1,173 @@
+// Initializing a Cypress project with Cucumber for Gherkin tests
+
+// Step 1: Install Cypress and the Cucumber plugin
+// Install commands to execute in terminal:
+// npm install cypress @badeball/cypress-cucumber-preprocessor
+// npm install @cucumber/cucumber --save-dev
+// npm install cypress-html-reporter
+
+// Step 2: Configure Cypress with Cucumber
+
+// Add the following to your `cypress.config.js`:
+
+const { defineConfig } = require("cypress");
+const createBundler = require("@bahmutov/cypress-esbuild-preprocessor");
+const addCucumberPreprocessorPlugin = require("@badeball/cypress-cucumber-preprocessor").addCucumberPreprocessorPlugin;
+const createEsbuildPlugin = require("@badeball/cypress-cucumber-preprocessor/esbuild-plugin");
+
+module.exports = defineConfig({
+  e2e: {
+    async setupNodeEvents(on, config) {
+      const bundler = createBundler({
+        plugins: [createEsbuildPlugin(config)],
+      });
+
+      on("file:preprocessor", bundler);
+      await addCucumberPreprocessorPlugin(on, config);
+
+      return config;
+    },
+    specPattern: "cypress/e2e/**/*.feature",
+  },
+});
+
+// Step 3: Add feature files
+// Create feature files in the `cypress/e2e` directory
+
+// Example of signUp.feature
+Feature: Sign Up Process
+  As a user
+  I want to sign up, log in, and log out successfully
+  So that I can access my account securely
+
+  Scenario: User signs up, logs in, and logs out
+    Given I open the homepage
+    When I click on the "Sign Up" button
+    And I enter "testuser" as the username and "Password123!" as the password
+    And I click the "Sign Up" button
+    Then I should see a success message "Sign up successful"
+
+    When I log in using the "testuser" and "Password123!"
+    Then I should see the user logged in successfully
+
+    When I log out
+    Then I should see the homepage again
+
+// Example of cart.feature
+Feature: Product Cart Management
+  As a user
+  I want to add a product to the cart and delete it
+  So that I can manage my cart efficiently
+
+  Scenario: Add and delete product from the cart
+    Given I am logged in
+    When I navigate to a product page
+    And I click "Add to Cart"
+    Then I should see the product added to the cart
+
+    When I navigate to the cart page
+    And I delete the product
+    Then I should see the cart empty
+
+// Example of purchase.feature
+Feature: Purchase Process
+  As a user
+  I want to complete a purchase successfully
+  So that I can buy the products I need
+
+  Scenario: Complete a purchase
+    Given I am logged in
+    And I have a product in my cart
+    When I navigate to the cart page
+    And I click "Place Order"
+    And I fill in the purchase details
+      | Name     | Credit Card Number | Address       |
+      | John Doe | 1234-5678-9012-3456 | 123 Main St   |
+    And I confirm the purchase
+    Then I should see a success message "Purchase Successful"
+
+// Step 4: Implement the steps in the corresponding JS files under `cypress/support/step_definitions`:
+
+// Example: signUpSteps.js
+
+const { Given, When, Then } = require("@badeball/cypress-cucumber-preprocessor");
+
+Given("I open the homepage", () => {
+  cy.visit("https://www.demoblaze.com/");
+});
+
+When("I click on the \"Sign Up\" button", () => {
+  cy.get("#signin2").click();
+});
+
+When("I enter {string} as the username and {string} as the password", (username, password) => {
+  cy.get("#sign-username").type(username);
+  cy.get("#sign-password").type(password);
+});
+
+When("I click the \"Sign Up\" button", () => {
+  cy.get("button[onclick='register()']").click();
+});
+
+Then("I should see a success message {string}", (message) => {
+  cy.on("window:alert", (text) => {
+    expect(text).to.contains(message);
+  });
+});
+
+// Example: cartSteps.js
+Given("I am logged in", () => {
+  cy.visit("https://www.demoblaze.com/");
+  cy.get("#login2").click();
+  cy.get("#loginusername").type("testuser");
+  cy.get("#loginpassword").type("Password123!");
+  cy.get("button[onclick='logIn()']").click();
+});
+
+When("I navigate to a product page", () => {
+  cy.get(".hrefch").first().click();
+});
+
+When("I click \"Add to Cart\"", () => {
+  cy.get("a[onclick='addToCart(1)']").click();
+});
+
+Then("I should see the product added to the cart", () => {
+  cy.on("window:alert", (text) => {
+    expect(text).to.contains("Product added");
+  });
+});
+
+When("I navigate to the cart page", () => {
+  cy.get("#cartur").click();
+});
+
+When("I delete the product", () => {
+  cy.get(".success > td > a").click();
+});
+
+Then("I should see the cart empty", () => {
+  cy.get("#tbodyid").should("not.have.descendants");
+});
+
+// Example: purchaseSteps.js
+When("I click \"Place Order\"", () => {
+  cy.get("button[data-target='#orderModal']").click();
+});
+
+When("I fill in the purchase details", (dataTable) => {
+  const data = dataTable.rowsHash();
+  cy.get("#name").type(data.Name);
+  cy.get("#credit-card").type(data["Credit Card Number"]);
+  cy.get("#address").type(data.Address);
+});
+
+When("I confirm the purchase", () => {
+  cy.get("button[onclick='purchaseOrder()']").click();
+});
+
+Then("I should see a success message \"Purchase Successful\"", () => {
+  cy.contains("Thank you for your purchase!").should("be.visible");
+});
+
+
