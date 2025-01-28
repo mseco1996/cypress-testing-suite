@@ -82,7 +82,7 @@ Feature: Purchase Process
     And I click "Place Order"
     And I fill in the purchase details
       | Name     | Credit Card Number | Address       |
-      | John Doe | 1234-5678-9012-3456 | 123 Main St   |
+      | Manuel Seco | 1234-5678-9012-3456 | 123 Main St   |
     And I confirm the purchase
     Then I should see a success message "Purchase Successful"
 
